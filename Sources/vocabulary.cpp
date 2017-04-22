@@ -16,7 +16,7 @@ namespace
     {
     }
 
-    virtual Frequency Search(String const& word) override
+    virtual Frequency Search(String const& word) const override
     {
       auto result = Words.find(word);
       return result == Words.end() ? 0 : result->second;

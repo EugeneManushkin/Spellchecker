@@ -22,10 +22,10 @@ namespace Spellchecker
     {
     }
 
-    virtual Frequency Search(String const& word) = 0;
+    virtual Frequency Search(String const& word) const = 0;
     virtual void InsertWord(String const& word, Frequency) = 0;
 
-    Alphabet const& GetAlphabet()
+    Alphabet const& GetAlphabet() const
     {
       return *Alphabet;
     }
