@@ -1,9 +1,11 @@
 #include "alphabet.h"
+#include "engine.h"
 #include "vocabulary.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -54,14 +56,20 @@ int main(int argc, char* argv[])
   try
   {
     auto voc = LoadVocabulary(argv[1]);
+    auto engine = Spellchecker::CreateEngine();
     std::cout << "Print word" << std::endl;
     SetConsoleCP(1251);
     std::string line;
     do
     {
       std::cin >> line;
-      if (line != "exit")
-        std::cout << "frequency: " << voc->Search(line) << std::endl;
+      if (line == "exit")
+        break;
+
+      auto res = engine->Check(line, 2, *voc);
+      std::for_each(res.begin(), res.end(), [](Spellchecker::Word const& w){std::cout << Spellchecker::GetString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;});
+      if (res.empty())
+        std::cout << "Not found";
     }
     while (line != "exit");
   }

@@ -7,6 +7,7 @@
 namespace Spellchecker
 {
   using Frequency = std::size_t;
+  using Word = std::pair<Frequency, String>;
 
   class Alphabet;
 
@@ -22,7 +23,7 @@ namespace Spellchecker
     {
     }
 
-    virtual Frequency Search(String const& word) const = 0;
+    virtual Word Search(String const& str) const = 0;
     virtual void InsertWord(String const& word, Frequency) = 0;
 
     Alphabet const& GetAlphabet() const
@@ -35,4 +36,6 @@ namespace Spellchecker
   };
 
   std::unique_ptr<Vocabulary> CreateVocabulary(std::shared_ptr<Alphabet> const& alphabet);
+  Frequency GetFrequency(Word const& w);
+  String GetString(Word const& w);
 }
