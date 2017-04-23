@@ -38,7 +38,26 @@ namespace
 
     bool Next()
     {
-      if (CurrentChange == Changes.end())
+      while (Move() && !ApplyChange());
+      return !EndReached();
+    }
+
+  private:
+    enum class ChangeType
+    {
+      Remove,
+      Replace,
+      Insert,
+    };
+
+    bool EndReached()
+    {
+      return CurrentChange == Changes.end();
+    }
+
+    bool Move()
+    {
+      if (EndReached())
         return false;
 
       if (*CurrentChange == ChangeType::Remove)
@@ -60,31 +79,30 @@ namespace
         ++CurrentChange;
       }
 
-      if (CurrentChange == Changes.end())
-        return false;
-
-      ApplyChange();
-      return true;
+      return !EndReached();
     }
 
-  private:
-    enum class ChangeType
-    {
-      Remove,
-      Replace,
-      Insert,
-    };
-
-    void ApplyChange()
+    bool ApplyChange()
     {
       CurrentWord = SourceWord;
       auto iter = CurrentWord.begin() + (CurrentSymbol - SourceWord.begin());
-      if (*CurrentChange == ChangeType::Insert)
+      switch (*CurrentChange)
+      {
+      case ChangeType::Insert:
         CurrentWord.insert(iter, *CurrentAlpha);
-      else if(*CurrentChange == ChangeType::Remove)
+        return true;
+      case ChangeType::Remove:
         CurrentWord.erase(iter);
-      else
+        return true;
+      case ChangeType::Replace:
+        if (*iter == *CurrentAlpha)
+          return false;
+
         *iter = *CurrentAlpha;
+        return true;
+      }
+
+      return true;
     }
 
     String CurrentWord;
