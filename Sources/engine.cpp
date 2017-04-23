@@ -46,13 +46,15 @@ namespace
       else
         ++CurrentAlpha;
 
+      bool checkCurrentSymbol = *CurrentChange != ChangeType::Insert;
       if (CurrentAlpha == Chars.end())
       {
         CurrentAlpha = Chars.begin();
-        ++CurrentSymbol;
+        checkCurrentSymbol = checkCurrentSymbol || CurrentSymbol == SourceWord.end();
+        CurrentSymbol = CurrentSymbol == SourceWord.end() ? CurrentSymbol : ++CurrentSymbol;
       }
 
-      if (CurrentSymbol == SourceWord.end())
+      if (checkCurrentSymbol && CurrentSymbol == SourceWord.end())
       {
         CurrentSymbol = SourceWord.begin();
         ++CurrentChange;
@@ -79,7 +81,7 @@ namespace
       auto iter = CurrentWord.begin() + (CurrentSymbol - SourceWord.begin());
       if (*CurrentChange == ChangeType::Insert)
         CurrentWord.insert(iter, *CurrentAlpha);
-      if (*CurrentChange == ChangeType::Remove)
+      else if(*CurrentChange == ChangeType::Remove)
         CurrentWord.erase(iter);
       else
         *iter = *CurrentAlpha;
