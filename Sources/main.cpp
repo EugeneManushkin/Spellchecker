@@ -12,6 +12,9 @@
 
 namespace
 {
+  using VocabularyPtr = std::unique_ptr<Spellchecker::Vocabulary>;
+  using Vocabularies = std::vector<VocabularyPtr>;
+
   std::unique_ptr<Spellchecker::Alphabet> LoadAlphabet(std::ifstream& file)
   {
     std::string lowerChars;
@@ -43,39 +46,106 @@ namespace
 
     return voc;
   }
+
+  Vocabularies LoadVocabularies(int argc, char* argv[])
+  {
+    Vocabularies result;
+    std::for_each(argv + 1, argv + argc, [&](char* value) 
+    {
+      try
+      {
+        result.push_back(LoadVocabulary(value));
+      }
+      catch (std::exception const& err)
+      {
+        std::cout << "Failed to load vocabulary " << value << ": " << err.what() << std::endl;
+      }
+    });
+
+    return result;
+  }
+
+  void CheckWord(std::string const& word, Spellchecker::Engine const& engine, Spellchecker::Vocabulary const& voc, unsigned maxResults)
+  {
+    try
+    {
+      auto result = engine.Check(word, maxResults, voc);
+      for (auto const& w : result)
+        std::cout << Spellchecker::GetString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;
+
+      if (result.empty())
+        std::cout << "Not found" << std::endl;
+    }
+    catch (Spellchecker::Alphabet::ErrorStringNotSuitable const&)
+    {
+    }
+  
+    std::cout << std::endl;
+  }
+
+  void Usage()
+  {
+    std::cout << "Usage: '-exit' - to quit program" << std::endl;
+    std::cout << "       '-help' - print this message" << std::endl;
+    std::cout << "       '<word>' - any word to check spelling. Output:" << std::endl;
+    std::cout << "                  <word1> : <word1_frequency>" << std::endl;
+    std::cout << "                  <word2> : <word2_frequency>" << std::endl;
+    std::cout << "                  ..." << std::endl;
+    std::cout << "                  <wordn> : <wordn_frequency>" << std::endl;
+    std::cout << "To use vocabulary with specific codepage set proper codepage with CHCP utility before running this program" << std::endl;
+  }
+
+  void MainLoop(Vocabularies const& vocabularies)
+  {
+    Usage();
+    auto engine = Spellchecker::CreateEngine();
+    std::string line;
+    do
+    {
+      std::cout << ">";
+      std::cin >> line;
+      if (line == "-exit")
+        break;
+
+      if (line == "-help")
+      {
+        Usage();
+        continue;
+      }
+
+      for (auto const& voc : vocabularies)
+        CheckWord(line, *engine, *voc, 3);
+    } 
+    while (line != "-exit");
+  }
+
+  std::string ExtractExeName(char const* str)
+  {
+    std::string exeFile(str);
+    auto begin = exeFile.find_last_of("/\\");
+    return begin == std::string::npos ? exeFile : exeFile.substr(begin + 1);
+  }
 }
 
 int main(int argc, char* argv[])
 {
-  if (argc < 2)
+  auto exeFile = ExtractExeName(argv[0]);
+  std::cout << exeFile << std::endl;
+  auto vocabularies = LoadVocabularies(argc, argv);
+  if (vocabularies.empty())
   {
-    std::cout << "Voc file required";
+    std::cout << "No vocabularies loaded" << std::endl <<
+                 "Usage: " << exeFile << "vocabulary1.voc vocabulary2.voc ... vocabularyn.voc" << std::endl;
     return 1;
   }
 
   try
   {
-    auto voc = LoadVocabulary(argv[1]);
-    auto engine = Spellchecker::CreateEngine();
-    std::cout << "Print word" << std::endl;
-    SetConsoleCP(1251);
-    std::string line;
-    do
-    {
-      std::cin >> line;
-      if (line == "exit")
-        break;
-
-      auto res = engine->Check(line, 2, *voc);
-      std::for_each(res.begin(), res.end(), [](Spellchecker::Word const& w){std::cout << Spellchecker::GetString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;});
-      if (res.empty())
-        std::cout << "Not found";
-    }
-    while (line != "exit");
+    MainLoop(vocabularies);
   }
   catch (std::exception const& e)
   {
-    std::cout << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << std::endl;
     return 1;
   }
 

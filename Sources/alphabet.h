@@ -3,12 +3,22 @@
 #include "string.h"
 
 #include <memory>
+#include <stdexcept>
 
 namespace Spellchecker
 {
   class Alphabet
   {
   public:
+    class ErrorStringNotSuitable : public std::invalid_argument
+    {
+    public:
+      ErrorStringNotSuitable(char const* str)
+        : std::invalid_argument(str)
+      {
+      }
+    };
+
     enum class Case
     {
       Lower,

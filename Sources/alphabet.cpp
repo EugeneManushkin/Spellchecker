@@ -46,7 +46,7 @@ namespace
           else
           {
             if (!maxMismatch)
-              throw std::invalid_argument("String contains symbols from multiple alphabets");
+              throw ErrorStringNotSuitable("String contains symbols from different alphabet");
 
             --maxMismatch;
           }
