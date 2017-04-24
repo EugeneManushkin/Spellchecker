@@ -30,6 +30,7 @@ namespace
     file.open(fileName);
     std::shared_ptr<void> fileCloser(0, [&](void*) { file.close(); });
     auto voc = Spellchecker::CreateVocabulary(LoadAlphabet(file));
+    auto const& alphabet = voc->GetAlphabet();
     while (!file.eof())
     {
       std::string word;
@@ -38,7 +39,7 @@ namespace
       if (!freq)
         throw std::runtime_error("Invalid file format");
 
-      voc->InsertWord(word, freq);
+      voc->InsertWord(alphabet.GetAligned(word, 0), freq);
     }
 
     return voc;
@@ -69,9 +70,6 @@ namespace
       auto result = engine.Check(word, maxResults, voc);
       for (auto const& w : result)
         std::cout << Spellchecker::GetString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;
-
-      if (result.empty())
-        std::cout << "Not found" << std::endl;
     }
     catch (Spellchecker::Alphabet::ErrorStringNotSuitable const&)
     {

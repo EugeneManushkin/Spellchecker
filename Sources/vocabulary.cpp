@@ -30,7 +30,7 @@ namespace
 
     virtual void InsertWord(String const& word, Frequency freq) override
     {
-      Words[GetAlphabet().GetAligned(word, 0)] = freq;
+      Words[word] = freq;
     }
 
   private:
