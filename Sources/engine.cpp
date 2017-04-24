@@ -39,6 +39,12 @@ namespace
     }
 
   protected:
+    String::iterator ResetCurrentWord()
+    {
+      CurrentWord = SourceWord;
+      return CurrentWord.begin() + std::distance(SourceWord.begin(), Iter);
+    }
+
     String const SourceWord;
     String::const_iterator Iter;
     String CurrentWord;
@@ -59,8 +65,7 @@ namespace
       if (Iter == SourceWord.end())
         return false;
 
-      CurrentWord = SourceWord;
-      CurrentWord.erase(CurrentWord.begin() + std::distance(SourceWord.begin(), Iter));
+      CurrentWord.erase(ResetCurrentWord());
       ++Iter;
       return true;
     }
@@ -92,7 +97,6 @@ namespace
       if (Iter == SourceWord.end())
         return false;
 
-      CurrentWord = SourceWord;
       for (; !Apply(); Move());
       Move();
       return true;
@@ -101,7 +105,7 @@ namespace
   private:
     bool Apply()
     {
-      auto cur = CurrentWord.begin() + std::distance(SourceWord.begin(), Iter);
+      auto cur = ResetCurrentWord();
       bool result = *cur != *Alpha;
       *cur = *Alpha;
       return result;
@@ -131,8 +135,7 @@ namespace
       if (Iter == SourceWord.end() && Alpha == Alphabet.end())
         return false;
 
-      CurrentWord = SourceWord;
-      CurrentWord.insert(CurrentWord.begin() + std::distance(SourceWord.begin(), Iter), *Alpha);
+      CurrentWord.insert(ResetCurrentWord(), *Alpha);
       if (++Alpha == Alphabet.end() && Iter != SourceWord.end())
       {
         Alpha = Alphabet.begin();
@@ -156,8 +159,7 @@ namespace
       if (Iter == SourceWord.end() || Iter == SourceWord.end() - 1)
         return false;
 
-      CurrentWord = SourceWord;
-      auto cur = CurrentWord.begin() + std::distance(SourceWord.begin(), Iter);
+      auto cur = ResetCurrentWord();
       std::swap(*cur, *(cur + 1));
       ++Iter;
       return true;
