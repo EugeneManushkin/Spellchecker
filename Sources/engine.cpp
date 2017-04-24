@@ -141,8 +141,27 @@ namespace
 
       return true;
     }
+  };
 
-  private:
+  class SwapChangeIterator : public SourceWordHolder
+  {
+  public:
+    SwapChangeIterator(String const& sourceWord)
+      : SourceWordHolder(sourceWord)
+    {
+    }
+
+    virtual bool Next() override
+    {
+      if (Iter == SourceWord.end() || Iter == SourceWord.end() - 1)
+        return false;
+
+      CurrentWord = SourceWord;
+      auto cur = CurrentWord.begin() + std::distance(SourceWord.begin(), Iter);
+      std::swap(*cur, *(cur + 1));
+      ++Iter;
+      return true;
+    }
   };
 
   class MultipleChangesIterator : public ChangesIterator
@@ -152,8 +171,9 @@ namespace
       : Remover(sourceWord)
       , Replacer(sourceWord, alphabet)
       , Inserter(sourceWord, alphabet)
+      , Swapper(sourceWord)
     {
-      Iterators = { &Remover, &Replacer, &Inserter };
+      Iterators = { &Remover, &Replacer, &Inserter, &Swapper };
     }
 
     virtual bool Next() override
@@ -174,6 +194,7 @@ namespace
     RemoveChangeIterator Remover;
     ReplaceChangeIterator Replacer;
     InsertChangeIterator Inserter;
+    SwapChangeIterator Swapper;
     std::deque<ChangesIterator*> Iterators;
   };
 
