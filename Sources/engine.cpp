@@ -209,6 +209,14 @@ namespace
       if (str.empty())
         throw std::invalid_argument("Cannot check empty string");
 
+      unsigned const maxInvalidChars = 1;
+      auto alignedString = vocabulary.GetAlphabet().GetAligned(str, maxInvalidChars);
+      return CheckImpl(alignedString, maxMatches, vocabulary);
+    }
+
+  private:
+    Words CheckImpl(String const& str, unsigned maxMatches, Vocabulary const& vocabulary) const
+    {
       auto word = vocabulary.Search(str);
       if (!!Spellchecker::GetFrequency(word))
         return Words(1, word);
