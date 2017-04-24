@@ -14,7 +14,7 @@ namespace Spellchecker
   class Vocabulary
   {
   public:
-    Vocabulary(std::shared_ptr<Spellchecker::Alphabet> const& alphabet)
+    Vocabulary(std::shared_ptr<Alphabet> const& alphabet)
       : Alphabet(alphabet)
     {
     }
