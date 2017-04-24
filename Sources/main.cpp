@@ -78,15 +78,32 @@ namespace
     std::cout << std::endl;
   }
 
+  unsigned GetMaxSuggestions(std::string const& inputStr)
+  {
+    unsigned const maxNumber = 50;
+    try
+    {
+      auto result = std::stoul(inputStr.substr(1));
+      return result < maxNumber ? static_cast<unsigned>(result) : maxNumber;
+    }
+    catch (std::logic_error const& err)
+    {
+      std::cout << err.what() << std::endl;
+    }
+
+    return 0;
+  }
+
   void Usage()
   {
-    std::cout << "Usage: '-exit' - to quit program" << std::endl;
-    std::cout << "       '-help' - print this message" << std::endl;
-    std::cout << "       '<word>' - any word to check spelling. Output:" << std::endl;
-    std::cout << "                  <word1> : <word1_frequency>" << std::endl;
-    std::cout << "                  <word2> : <word2_frequency>" << std::endl;
-    std::cout << "                  ..." << std::endl;
-    std::cout << "                  <wordn> : <wordn_frequency>" << std::endl;
+    std::cout << "Usage: '-exit' '-x' '-q'  to quit program" << std::endl;
+    std::cout << "       '-help' '-h'       print this message" << std::endl;
+    std::cout << "       '-<number>'        show <number> spelling suggestions" << std::endl;
+    std::cout << "       '<word>'           any word to check spelling. Output:" << std::endl;
+    std::cout << "                          <word1> : <word1_frequency>" << std::endl;
+    std::cout << "                          <word2> : <word2_frequency>" << std::endl;
+    std::cout << "                            ..." << std::endl;
+    std::cout << "                          <wordn> : <wordn_frequency>" << std::endl;
     std::cout << "To use vocabulary with specific codepage set proper codepage with CHCP utility before running this program" << std::endl;
   }
 
@@ -95,21 +112,30 @@ namespace
     Usage();
     auto engine = Spellchecker::CreateEngine();
     std::string line;
+    unsigned maxResults = 3;
     do
     {
       std::cout << ">";
       std::cin >> line;
-      if (line == "-exit")
+      if (line == "-exit" || line == "-x" || line == "-q")
         break;
 
-      if (line == "-help")
+      if (line == "-help" || line == "-h")
       {
         Usage();
         continue;
       }
 
+      if (!line.empty() && line[0] == '-')
+      {
+        auto n = GetMaxSuggestions(line);
+        maxResults = !n ? maxResults : n;
+        std::cout << "Show " << maxResults << " suggestions" << std::endl;
+        continue;
+      }
+
       for (auto const& voc : vocabularies)
-        CheckWord(line, *engine, *voc, 3);
+        CheckWord(line, *engine, *voc, maxResults);
     } 
     while (line != "-exit");
   }
