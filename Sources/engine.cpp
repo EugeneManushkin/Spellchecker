@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <set>
+#include <deque>
 
 namespace
 {
@@ -15,103 +16,165 @@ namespace
   class ChangesIterator
   {
   public:
-    ChangesIterator(String const& word, String const& chars)
-      : CurrentWord(word)
-      , SourceWord(word)
-      , Chars(chars)
-      , CurrentSymbol(SourceWord.begin())
-      , CurrentAlpha(Chars.begin())
+    virtual ~ChangesIterator()
     {
-      Changes.push_back(ChangeType::Insert);
-      Changes.push_back(ChangeType::Replace);
-      if (SourceWord.length() > 1)
-        Changes.push_back(ChangeType::Remove);
-
-      CurrentChange = Changes.begin();
-      ApplyChange();
     }
 
-    String const& Current() const
+    virtual bool Next() = 0;
+    virtual String const& Current() const = 0;
+  };
+
+  class SourceWordHolder : public ChangesIterator
+  {
+  public:
+    SourceWordHolder(String const& sourceWord)
+      : SourceWord(sourceWord)
+      , Iter(SourceWord.begin())
+    {
+    }
+
+    virtual String const& Current() const override
     {
       return CurrentWord;
     }
 
-    bool Next()
+  protected:
+    String const SourceWord;
+    String::const_iterator Iter;
+    String CurrentWord;
+  };
+
+  class RemoveChangeIterator : public SourceWordHolder
+  {
+  public:
+    RemoveChangeIterator(String const& sourceWord)
+      : SourceWordHolder(sourceWord)
     {
-      while (Move() && !ApplyChange());
-      return !EndReached();
+      if (SourceWord.size() < 2)
+        Iter = SourceWord.end();
+    }
+
+    virtual bool Next() override
+    {
+      if (Iter == SourceWord.end())
+        return false;
+
+      CurrentWord = SourceWord;
+      CurrentWord.erase(CurrentWord.begin() + std::distance(SourceWord.begin(), Iter));
+      ++Iter;
+      return true;
+    }
+  };
+
+  struct AlphabetHolder
+  {
+    AlphabetHolder(String const& alphabet)
+      : Alphabet(alphabet)
+      , Alpha(Alphabet.begin())
+    {
+    }
+
+    String Alphabet;
+    String::const_iterator Alpha;
+  };
+
+  class ReplaceChangeIterator : public SourceWordHolder, private AlphabetHolder
+  {
+  public:
+    ReplaceChangeIterator(String const& sourceWord, String const& alphabet)
+      : SourceWordHolder(sourceWord)
+      , AlphabetHolder(alphabet)
+    {
+    }
+
+    virtual bool Next() override
+    {
+      if (Iter == SourceWord.end())
+        return false;
+
+      CurrentWord = SourceWord;
+      for (; !Apply(); Move());
+      Move();
+      return true;
     }
 
   private:
-    enum class ChangeType
+    bool Apply()
     {
-      Remove,
-      Replace,
-      Insert,
-    };
-
-    bool EndReached()
-    {
-      return CurrentChange == Changes.end();
+      auto cur = CurrentWord.begin() + std::distance(SourceWord.begin(), Iter);
+      bool result = *cur != *Alpha;
+      *cur = *Alpha;
+      return result;
     }
 
     bool Move()
     {
-      if (EndReached())
-        return false;
+      if (++Alpha != Alphabet.end())
+        return true;
 
-      if (*CurrentChange == ChangeType::Remove)
-        CurrentAlpha = Chars.end();
-      else
-        ++CurrentAlpha;
+      Alpha = Alphabet.begin();
+      return ++Iter != SourceWord.end();
+    }
+  };
 
-      bool checkCurrentSymbol = *CurrentChange != ChangeType::Insert;
-      if (CurrentAlpha == Chars.end())
-      {
-        CurrentAlpha = Chars.begin();
-        checkCurrentSymbol = checkCurrentSymbol || CurrentSymbol == SourceWord.end();
-        CurrentSymbol = CurrentSymbol == SourceWord.end() ? CurrentSymbol : ++CurrentSymbol;
-      }
-
-      if (checkCurrentSymbol && CurrentSymbol == SourceWord.end())
-      {
-        CurrentSymbol = SourceWord.begin();
-        ++CurrentChange;
-      }
-
-      return !EndReached();
+  class InsertChangeIterator : public SourceWordHolder, private AlphabetHolder
+  {
+  public:
+    InsertChangeIterator(String const& sourceWord, String const& alphabet)
+      : SourceWordHolder(sourceWord)
+      , AlphabetHolder(alphabet)
+    {
     }
 
-    bool ApplyChange()
+    virtual bool Next() override
     {
-      CurrentWord = SourceWord;
-      auto iter = CurrentWord.begin() + (CurrentSymbol - SourceWord.begin());
-      switch (*CurrentChange)
-      {
-      case ChangeType::Insert:
-        CurrentWord.insert(iter, *CurrentAlpha);
-        return true;
-      case ChangeType::Remove:
-        CurrentWord.erase(iter);
-        return true;
-      case ChangeType::Replace:
-        if (*iter == *CurrentAlpha)
-          return false;
+      if (Iter == SourceWord.end() && Alpha == Alphabet.end())
+        return false;
 
-        *iter = *CurrentAlpha;
-        return true;
+      CurrentWord = SourceWord;
+      CurrentWord.insert(CurrentWord.begin() + std::distance(SourceWord.begin(), Iter), *Alpha);
+      if (++Alpha == Alphabet.end() && Iter != SourceWord.end())
+      {
+        Alpha = Alphabet.begin();
+        ++Iter;
       }
 
       return true;
     }
 
-    String CurrentWord;
-    String SourceWord;
-    String Chars;
-    std::vector<ChangeType> Changes;
-    String::iterator CurrentSymbol;
-    String::const_iterator CurrentAlpha;
-    std::vector<ChangeType>::const_iterator CurrentChange;
+  private:
+  };
+
+  class MultipleChangesIterator : public ChangesIterator
+  {
+  public:
+    MultipleChangesIterator(String const& sourceWord, String const& alphabet)
+      : Remover(sourceWord)
+      , Replacer(sourceWord, alphabet)
+      , Inserter(sourceWord, alphabet)
+    {
+      Iterators = { &Remover, &Replacer, &Inserter };
+    }
+
+    virtual bool Next() override
+    {
+      if (Iterators.empty())
+        return false;
+
+      for (; !Iterators.empty() && !Iterators.back()->Next(); Iterators.pop_back());
+      return !Iterators.empty();
+    }
+
+    virtual String const& Current() const override
+    {
+      return Iterators.back()->Current();
+    }
+
+  private:
+    RemoveChangeIterator Remover;
+    ReplaceChangeIterator Replacer;
+    InsertChangeIterator Inserter;
+    std::deque<ChangesIterator*> Iterators;
   };
 
   class EngineImpl : public Spellchecker::Engine
@@ -130,8 +193,8 @@ namespace
         return Words(1, word);
 
       std::set<Word> results;
-      ChangesIterator iter(str, vocabulary.GetAlphabet().GetChars());
-      do
+      MultipleChangesIterator iter(str, vocabulary.GetAlphabet().GetChars());
+      while (iter.Next())
       {
         auto word = vocabulary.Search(iter.Current());
         if (!Spellchecker::GetFrequency(word))
@@ -144,7 +207,6 @@ namespace
 
         results.insert(word);
       }
-      while (iter.Next());
 
       return Words(results.rbegin(), results.rend());
     }
