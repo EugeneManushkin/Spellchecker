@@ -97,7 +97,10 @@ namespace
       if (Iter == SourceWord.end())
         return false;
 
-      for (; !Apply(); Move());
+      while (!Apply() && Move());
+      if (Iter == SourceWord.end())
+        return false;
+
       Move();
       return true;
     }
