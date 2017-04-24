@@ -234,7 +234,10 @@ namespace
         if (!Spellchecker::GetFrequency(word))
           continue;
 
-        if (!maxMatches && !results.empty())
+        if (!maxMatches && Spellchecker::GetFrequency(word) < Spellchecker::GetFrequency(*results.begin()))
+          continue;
+
+        if (!maxMatches)
           results.erase(results.begin());
         else
           --maxMatches;
