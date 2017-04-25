@@ -1,6 +1,7 @@
 #include "alphabet.h"
 #include "engine.h"
 #include "vocabulary.h"
+#include "utils.h"
 
 #include <algorithm>
 #include <fstream>
@@ -11,6 +12,7 @@ namespace
 {
   using VocabularyPtr = std::unique_ptr<Spellchecker::Vocabulary>;
   using Vocabularies = std::vector<VocabularyPtr>;
+  using namespace Spellchecker::Utils;
 
   std::unique_ptr<Spellchecker::Alphabet> LoadAlphabet(std::ifstream& file)
   {
@@ -19,7 +21,7 @@ namespace
     if (!std::getline(file, lowerChars) || !std::getline(file, upperChars))
       throw std::runtime_error("Invalid file format");
 
-    return Spellchecker::CreateAlphabet(lowerChars, upperChars);
+    return Spellchecker::CreateAlphabet(ToString(lowerChars), ToString(upperChars));
   }
 
   std::unique_ptr<Spellchecker::Vocabulary> LoadVocabulary(std::string const& fileName)
@@ -39,7 +41,7 @@ namespace
       if (!freq)
         throw std::runtime_error("Invalid file format");
 
-      voc->InsertWord(alphabet.GetAligned(word, 0), freq);
+      voc->InsertWord(alphabet.GetAligned(ToString(word), 0), freq);
     }
 
     return voc;
@@ -63,13 +65,13 @@ namespace
     return result;
   }
 
-  void CheckWord(std::string const& word, Spellchecker::Engine const& engine, Spellchecker::Vocabulary const& voc, unsigned maxResults)
+  void CheckWord(Spellchecker::String const& word, Spellchecker::Engine const& engine, Spellchecker::Vocabulary const& voc, unsigned maxResults)
   {
     try
     {
       auto result = engine.Check(word, maxResults, voc);
       for (auto const& w : result)
-        std::cout << Spellchecker::GetString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;
+        std::cout << GetStdString(w) << " : " << Spellchecker::GetFrequency(w) << std::endl;
     }
     catch (Spellchecker::Alphabet::ErrorStringNotSuitable const&)
     {
@@ -135,7 +137,7 @@ namespace
       }
 
       for (auto const& voc : vocabularies)
-        CheckWord(line, *engine, *voc, maxResults);
+        CheckWord(ToString(line), *engine, *voc, maxResults);
     } 
     while (line != "-exit");
   }

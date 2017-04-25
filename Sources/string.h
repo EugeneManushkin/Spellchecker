@@ -4,6 +4,6 @@
 
 namespace Spellchecker
 {
-  using String = std::string;
-  using Char = std::string::value_type;
+  using Char = wchar_t;
+  using String = std::basic_string<Char>;
 }

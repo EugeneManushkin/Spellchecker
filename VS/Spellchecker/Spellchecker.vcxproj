@@ -79,12 +79,14 @@
     <ClCompile Include="..\..\Sources\alphabet.cpp" />
     <ClCompile Include="..\..\Sources\engine.cpp" />
     <ClCompile Include="..\..\Sources\main.cpp" />
+    <ClCompile Include="..\..\Sources\utils.cpp" />
     <ClCompile Include="..\..\Sources\vocabulary.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Sources\alphabet.h" />
     <ClInclude Include="..\..\Sources\engine.h" />
     <ClInclude Include="..\..\Sources\string.h" />
+    <ClInclude Include="..\..\Sources\utils.h" />
     <ClInclude Include="..\..\Sources\vocabulary.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
